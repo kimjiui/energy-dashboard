@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🇰🇷 대한민국 에너지 Mix 인터랙티브 대시보드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
+  :root{--bg:#0A0F1E;--card:#111827;--border:rgba(255,255,255,0.07);--text:#F1F5F9;--muted:#64748B;--accent:#38BDF8;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(56,189,248,.03)1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.03)1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+  .wrap{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:20px 16px;}
+  .hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;flex-wrap:wrap;gap:8px;}
+  h1{font-size:clamp(14px,2vw,22px);font-weight:900;background:linear-gradient(135deg,#F1F5F9,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2;}
+  .sub{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:14px;}
+  .update-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);color:#10B981;padding:5px 12px;border-radius:20px;font-size:10px;font-weight:600;font-family:'DM Mono',monospace;}
+  .update-badge::before{content:'●';animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .loading{display:flex;align-items:center;justify-content:center;height:60vh;flex-direction:column;gap:16px;}
+  .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .error-box{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:20px;color:#EF4444;margin:20px 0;}
+  .notice{background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.15);border-radius:8px;padding:8px 13px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:12px;line-height:1.7;}
+  .page-tabs{display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);overflow-x:auto;}
+  .ptab{padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'Noto Sans KR',sans-serif;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;white-space:nowrap;}
+  .ptab.on{color:var(--accent);border-bottom-color:var(--accent);}
+  .page{display:none;}.page.on{display:block;}
+  .ctrl-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+  .ctrl-lbl{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;}
+  .tabs{display:flex;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+  .tab{padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);font-family:'Noto Sans KR',sans-serif;transition:all .2s;}
+  .tab.on{background:var(--accent);color:#0A0F1E;}
+  .srcs{display:flex;gap:5px;flex-wrap:wrap;}
+  .sb{padding:4px 10px;border-radius:20px;font-size:10px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Noto Sans KR',sans-serif;font-weight:600;transition:all .2s;}
+  .sb.on{color:#0A0F1E;border-color:transparent;}
+  .yr-btns{display:flex;gap:5px;flex-wrap:wrap;}
+  .yr-btn{padding:4px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'DM Mono',monospace;transition:all .2s;}
+  .yr-btn.on{background:var(--accent);color:#0A0F1E;border-color:var(--accent);}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px;}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;position:relative;overflow:hidden;}
+  .kpi-lbl{font-size:9px;color:var(--muted);margin-bottom:4px;font-weight:600;}
+  .kpi-val{font-size:18px;font-weight:900;font-family:'DM Mono',monospace;line-height:1;}
+  .kpi-sub{font-size:9px;color:var(--muted);margin-top:3px;}
+  .kpi-ico{position:absolute;top:10px;right:10px;font-size:14px;opacity:.4;}
+  .slider-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;}
+  .sl-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .sl-yr{font-size:26px;font-weight:900;font-family:'DM Mono',monospace;color:var(--accent);}
+  .badge{font-size:9px;padding:3px 9px;border-radius:20px;font-weight:700;}
+  .badge.act{background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.3);}
+  .badge.pln{background:rgba(56,189,248,.15);color:var(--accent);border:1px solid rgba(56,189,248,.3);}
+  input[type=range]{width:100%;-webkit-appearance:none;height:4px;background:linear-gradient(90deg,var(--accent) var(--pct,25%),rgba(255,255,255,.1) var(--pct,25%));border-radius:4px;outline:none;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);border:3px solid var(--bg);box-shadow:0 0 10px rgba(56,189,248,.5);cursor:pointer;}
+  .ticks{display:flex;justify-content:space-between;margin-top:5px;}
+  .tick{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:15px;}
+  .card-title{font-size:12px;font-weight:700;margin-bottom:2px;}
+  .card-sub{font-size:9px;color:var(--muted);margin-bottom:10px;font-family:'DM Mono',monospace;}
+  .snap-grid{display:grid;grid-template-columns:155px 1fr;gap:14px;align-items:center;}
+  .pie-wrap{position:relative;height:150px;width:150px;margin:0 auto;}
+  .pie-mid{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;}
+  .pie-mid-val{font-size:14px;font-weight:900;font-family:'DM Mono',monospace;}
+  .pie-mid-lbl{font-size:8px;color:var(--muted);}
+  .bars{display:flex;flex-direction:column;gap:7px;}
+  .bar-row-lbl{display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px;}
+  .bar-name{font-weight:700;}.bar-val{font-family:'DM Mono',monospace;color:var(--muted);}
+  .bar-bg{height:4px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+  .bar-fg{height:100%;border-radius:3px;transition:width .4s ease;}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  @media(max-width:700px){.g2,.g3{grid-template-columns:1fr;}}
+  .mt{margin-top:12px;}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:7px;}
+  .leg-item{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--muted);}
+  .leg-dot{width:7px;height:7px;border-radius:50%;}
+  .dam-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:8px;margin-bottom:12px;}
+  .dam-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px;cursor:pointer;transition:all .2s;}
+  .dam-card:hover{transform:translateY(-2px);border-color:var(--accent);}
+  .dam-card.sel{border-color:var(--accent);background:#0F1E35;}
+  .dam-name{font-size:11px;font-weight:700;margin-bottom:5px;}
+  .dam-rate{font-size:18px;font-weight:900;font-family:'DM Mono',monospace;margin:3px 0;}
+  .dam-info{font-size:9px;color:var(--muted);line-height:1.6;}
+  .dbadge{display:inline-block;font-size:8px;padding:2px 7px;border-radius:10px;font-weight:700;margin-top:3px;}
+  .db-ok{background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.3);}
+  .db-w{background:rgba(245,158,11,.15);color:#F59E0B;border:1px solid rgba(245,158,11,.3);}
+  .db-d{background:rgba(239,68,68,.15);color:#EF4444;border:1px solid rgba(239,68,68,.3);}
+  .foot{text-align:center;font-size:9px;color:var(--muted);font-family:'DM Mono',monospace;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);}
+  .gn{color:#10B981;}.bl{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div style="color:var(--muted);font-size:13px;">데이터 로딩 중...</div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+// 데이터 로드 — GitHub Pages에서 data/dashboard_data.json 읽기
+// 로컬 실행 시에는 fallback 데이터 사용
+// ════════════════════════════════════════════════════
+const DATA_URL = "./data/dashboard_data.json";
+const TTP = {backgroundColor:'#1E293B',borderColor:'rgba(255,255,255,.1)',borderWidth:1};
+
+async function loadData() {
+  try {
+    const res = await fetch(DATA_URL + "?t=" + Date.now());
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch(e) {
+    console.warn("데이터 로드 실패, fallback 사용:", e.message);
+    return null;
+  }
+}
+
+function lerp(y, anc) {
+  const ks = Object.keys(anc).map(Number).sort((a,b)=>a-b);
+  if(y<=ks[0]) return anc[ks[0]];
+  if(y>=ks[ks.length-1]) return anc[ks[ks.length-1]];
+  for(let i=0;i<ks.length-1;i++){
+    if(y>=ks[i]&&y<=ks[i+1]){
+      const t=(y-ks[i])/(ks[i+1]-ks[i]);
+      return +(anc[ks[i]]*(1-t)+anc[ks[i+1]]*t).toFixed(2);
+    }
+  }
+}
+
+function pct(v,t){return t>0?(v/t*100).toFixed(1)+'%':'-';}
+
+// ─── 앱 초기화 ───────────────────────────────────────
+async function init() {
+  const raw = await loadData();
+
+  // 데이터 파싱
+  let plan, dams, regional, updatedAt;
+  if(raw) {
+    plan      = raw.plan;
+    dams      = raw.dams;
+    regional  = raw.regional;
+    updatedAt = raw.meta?.updated_at || "알 수 없음";
+  } else {
+    // fallback: 빌트인 데이터
+    plan      = FALLBACK_PLAN;
+    dams      = FALLBACK_DAMS;
+    regional  = FALLBACK_REGIONAL;
+    updatedAt = "내장 데이터 (오프라인)";
+  }
+
+  // 앱 HTML 렌더
+  document.getElementById("app").innerHTML = buildAppHTML(updatedAt);
+  attachEventListeners(plan, dams, regional);
+}
+
+function buildAppHTML(updatedAt) {
+  return `
+  <div class="hdr">
+    <div>
+      <h1>🇰🇷 대한민국 에너지 Mix 인터랙티브 대시보드</h1>
+      <div class="sub">SOURCE: EPSIS 한국전력통계 · 제11차 전력수급기본계획 · K-water 수자원공사 | 자동 업데이트</div>
+    </div>
+    <div class="update-badge">최종 업데이트: ${updatedAt}</div>
+  </div>
+
+  <div class="notice">
+    📡 <b>자동 업데이트</b>: GitHub Actions가 매일 오전 9시(KST)에 공식 사이트에서 데이터를 수집해 갱신합니다.<br>
+    실적(2018~현재): EPSIS · K-water 확정치 &nbsp;|&nbsp; 전망(~2038): 제11차 전력수급기본계획(2025.02 확정)
+  </div>
+
+  <div class="page-tabs">
+    <button class="ptab on"  onclick="switchPage('mix',this)">⚡ 에너지 Mix (전국)</button>
+    <button class="ptab"     onclick="switchPage('region',this)">🗺️ 지역별 발전·수요</button>
+    <button class="ptab"     onclick="switchPage('water',this)">💧 용수 · 댐 현황</button>
+  </div>
+
+  <!-- PAGE 1: 에너지 Mix -->
+  <div class="page on" id="pg-mix">
+    <div class="ctrl-row">
+      <span class="ctrl-lbl">VIEW</span>
+      <div class="tabs">
+        <button class="tab on" onclick="setView('gen',this)">발전량 (TWh)</button>
+        <button class="tab" onclick="setView('cap',this)">설비용량 (GW)</button>
+        <button class="tab" onclick="setView('pct',this)">발전비중 (%)</button>
+      </div>
+      <span class="ctrl-lbl" style="margin-left:6px;">에너지원</span>
+      <div class="srcs" id="srcs"></div>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <div class="slider-box">
+      <div class="sl-top">
+        <div><div class="sl-yr" id="yrDisp">2023</div><div style="font-size:10px;color:var(--muted);margin-top:1px;">연도별 스냅샷</div></div>
+        <span class="badge act" id="yrBadge">● 실적</span>
+      </div>
+      <input type="range" id="sl" min="0" max="20" value="5" oninput="onSlide(this.value)">
+      <div class="ticks"><span class="tick">2018</span><span class="tick">2022</span><span class="tick">2026</span><span class="tick">2030</span><span class="tick">2034</span><span class="tick">2038</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title" id="snapTitle">2023년 에너지원별 구성</div>
+      <div class="card-sub" id="snapSub">EPSIS 확정치</div>
+      <div class="snap-grid">
+        <div class="pie-wrap"><canvas id="pieC"></canvas>
+          <div class="pie-mid"><div class="pie-mid-val" id="pieVal">—</div><div class="pie-mid-lbl" id="pieLbl">합계</div></div>
+        </div>
+        <div class="bars" id="barList"></div>
+      </div>
+    </div>
+    <div class="card mt">
+      <div class="card-title">에너지원별 추이 (2018~2038)</div>
+      <div class="card-sub" id="trendSub"></div>
+      <div style="position:relative;height:250px;"><canvas id="trendC"></canvas></div>
+      <div class="legend" id="leg"></div>
+    </div>
+    <div class="g3 mt">
+      <div class="card"><div class="card-title">에너지원 비중 변화</div><div class="card-sub">발전 Mix (%)</div><div style="position:relative;height:190px;"><canvas id="stackC"></canvas></div></div>
+      <div class="card"><div class="card-title">에너지원별 용량 변화</div><div class="card-sub">연말 정격용량 누적 (GW)</div><div style="position:relative;height:190px;"><canvas id="capC"></canvas></div></div>
+      <div class="card"><div class="card-title">재생에너지 성장 추이</div><div class="card-sub">재생e+신e·수소 (TWh/%)</div><div style="position:relative;height:190px;"><canvas id="renewC"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- PAGE 2: 지역별 -->
+  <div class="page" id="pg-region">
+    <div class="ctrl-row">
+      <span class="ctrl-lbl">연도</span><div class="yr-btns" id="rYrBtns"></div>
+      <span class="ctrl-lbl" style="margin-left:8px;">지표</span>
+      <div class="tabs"><button class="tab on" onclick="setRMode('both',this)">발전+수요</button><button class="tab" onclick="setRMode('gen',this)">발전량</button><button class="tab" onclick="setRMode('dem',this)">수요</button></div>
+    </div>
+    <div class="kpis" id="rKpis"></div>
+    <div class="card"><div class="card-title" id="rMainTitle">지역별 발전량 vs 수요</div><div class="card-sub">TWh · 수도권=서울+인천+경기</div><div style="position:relative;height:320px;"><canvas id="rMainC"></canvas></div></div>
+    <div class="g2 mt">
+      <div class="card"><div class="card-title">지역별 수급 자립도</div><div class="card-sub">발전량÷수요×100%</div><div style="position:relative;height:280px;"><canvas id="rGapC"></canvas></div></div>
+      <div class="card"><div class="card-title" id="rPieTitle">수요 지역 비중</div><div class="card-sub">전국 대비 (%)</div><div style="position:relative;height:280px;"><canvas id="rPieC"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- PAGE 3: 댐 -->
+  <div class="page" id="pg-water">
+    <div class="notice" id="damNotice">💧 실시간 저수율 데이터 로딩 중...</div>
+    <div class="ctrl-row">
+      <span class="ctrl-lbl">권역</span>
+      <div class="tabs">
+        <button class="tab on" onclick="setBasin('all',this)">전체</button>
+        <button class="tab" onclick="setBasin('han',this)">한강</button>
+        <button class="tab" onclick="setBasin('nak',this)">낙동강</button>
+        <button class="tab" onclick="setBasin('geum',this)">금강</button>
+        <button class="tab" onclick="setBasin('sum',this)">섬진강</button>
+      </div>
+    </div>
+    <div class="dam-grid" id="damCards"></div>
+    <div class="g2 mt">
+      <div class="card"><div class="card-title" id="damRateTitle">소양강댐 — 연도별 저수율</div><div class="card-sub">% · K-water 수문운영정보</div><div style="position:relative;height:200px;"><canvas id="damRateC"></canvas></div></div>
+      <div class="card"><div class="card-title">주요 댐 저수율 비교</div><div class="card-sub">% · 당일 현황</div><div style="position:relative;height:200px;"><canvas id="allDamC"></canvas></div></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span class="gn">■ 실적</span> EPSIS (epsis.kpx.or.kr) &nbsp;|&nbsp;
+    <span class="bl">■ 전망</span> 제11차 전력수급기본계획 (공고 제2025-169호) &nbsp;|&nbsp;
+    💧 K-water · 환경부 국가가뭄정보포털 &nbsp;|&nbsp;
+    🤖 GitHub Actions 자동 업데이트
+  </div>`;
+}
+
+// ─── 이벤트 및 차트 로직 ─────────────────────────────
+let planData, damsData, regionalData;
+let view='gen', selYr=2023, active;
+let rMode='both', selRYr=2024, selBasin='all', selDam=null;
+let charts={};
+
+const GEN_SRCS=[
+  {id:'nuclear',lbl:'원자력',clr:'#3B82F6'},
+  {id:'coal',lbl:'석탄',clr:'#6B7280'},
+  {id:'lng',lbl:'LNG',clr:'#F59E0B'},
+  {id:'renew',lbl:'재생e',clr:'#10B981'},
+  {id:'shin',lbl:'신e·수소',clr:'#A78BFA'},
+  {id:'other',lbl:'기타',clr:'#94A3B8'},
+];
+const CAP_SRCS=[
+  {id:'nuclear',lbl:'원자력',clr:'#3B82F6'},
+  {id:'coal',lbl:'석탄',clr:'#6B7280'},
+  {id:'lng',lbl:'LNG',clr:'#F59E0B'},
+  {id:'renew',lbl:'재생e',clr:'#10B981'},
+  {id:'shin',lbl:'신e·수소',clr:'#A78BFA'},
+  {id:'pumped',lbl:'양수',clr:'#06B6D4'},
+  {id:'other',lbl:'기타',clr:'#94A3B8'},
+];
+
+function attachEventListeners(plan, dams, regional) {
+  planData = plan;
+  damsData = dams;
+  regionalData = regional;
+  active = new Set(GEN_SRCS.map(s=>s.id));
+
+  initSrcBtns();
+  onSlide(5);
+  drawTrend(); drawStack(); drawCap(); drawRenew();
+}
+
+function switchPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('pg-'+id).classList.add('on'); el.classList.add('on');
+  if(id==='region') initRegion();
+  if(id==='water')  initWater();
+}
+
+function initSrcBtns(){
+  const w=document.getElementById('srcs'); w.innerHTML='';
+  GEN_SRCS.forEach(s=>{
+    const b=document.createElement('button');
+    b.className='sb on'; b.textContent=s.lbl;
+    b.style.background=s.clr; b.style.borderColor=s.clr;
+    b.onclick=()=>toggleSrc(s.id,b,s.clr); w.appendChild(b);
+  });
+}
+function toggleSrc(id,btn,clr){
+  if(active.has(id)){if(active.size===1)return;active.delete(id);btn.classList.remove('on');btn.style.background='transparent';btn.style.color=clr;}
+  else{active.add(id);btn.classList.add('on');btn.style.background=clr;btn.style.color='#0A0F1E';}
+  redrawMix();
+}
+function setView(v,el){view=v;document.querySelectorAll('#pg-mix .tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');redrawMix();}
+function onSlide(i){
+  const yrs=planData.years;
+  selYr=yrs[+i];
+  document.getElementById('sl').style.setProperty('--pct',(+i/(yrs.length-1)*100)+'%');
+  document.getElementById('yrDisp').textContent=selYr;
+  const isA=selYr<=planData.actual_until;
+  const b=document.getElementById('yrBadge');
+  b.textContent=isA?'● 실적':'◆ 전망'; b.className='badge '+(isA?'act':'pln');
+  drawKPI(); drawSnap();
+}
+
+function getGenArr(srcId){return planData.generation[srcId]||[];}
+function getCapArr(srcId){return planData.capacity_gw?.[srcId]||[];}
+function getChartData(){
+  if(view==='gen') return {data:Object.fromEntries(GEN_SRCS.map(s=>[s.id,getGenArr(s.id)])),unit:'TWh'};
+  if(view==='cap') return {data:Object.fromEntries(CAP_SRCS.map(s=>[s.id,getCapArr(s.id)])),unit:'GW'};
+  const tots=planData.years.map((_,i)=>GEN_SRCS.reduce((a,s)=>a+(getGenArr(s.id)[i]||0),0));
+  const pctData={};
+  GEN_SRCS.forEach(s=>{pctData[s.id]=planData.years.map((_,i)=>tots[i]>0?+((getGenArr(s.id)[i]||0)/tots[i]*100).toFixed(1):0);});
+  return {data:pctData,unit:'%'};
+}
+
+function drawKPI(){
+  const yi=planData.years.indexOf(selYr);
+  const gen=Object.fromEntries(GEN_SRCS.map(s=>[s.id,getGenArr(s.id)[yi]||0]));
+  const tot=GEN_SRCS.filter(s=>active.has(s.id)).reduce((a,s)=>a+gen[s.id],0);
+  const items=[
+    {lbl:'총 발전량',val:tot.toFixed(1)+' TWh',sub:selYr+'년',clr:'#38BDF8',ico:'⚡'},
+    {lbl:'원자력',val:(gen.nuclear||0).toFixed(1)+' TWh',sub:pct(gen.nuclear,tot),clr:'#3B82F6',ico:'⚛️'},
+    {lbl:'석탄',val:(gen.coal||0).toFixed(1)+' TWh',sub:pct(gen.coal,tot),clr:'#6B7280',ico:'🏭'},
+    {lbl:'LNG',val:(gen.lng||0).toFixed(1)+' TWh',sub:pct(gen.lng,tot),clr:'#F59E0B',ico:'🔥'},
+    {lbl:'재생e',val:(gen.renew||0).toFixed(1)+' TWh',sub:pct(gen.renew,tot),clr:'#10B981',ico:'🌿'},
+  ];
+  document.getElementById('kpis').innerHTML=items.map(it=>`
+    <div class="kpi" style="border-top:2px solid ${it.clr}">
+      <div class="kpi-ico">${it.ico}</div>
+      <div class="kpi-lbl">${it.lbl}</div>
+      <div class="kpi-val" style="color:${it.clr}">${it.val}</div>
+      <div class="kpi-sub">${it.sub}</div>
+    </div>`).join('');
+}
+
+function drawSnap(){
+  const yi=planData.years.indexOf(selYr),isA=selYr<=planData.actual_until;
+  document.getElementById('snapTitle').textContent=selYr+'년 에너지원별 구성';
+  document.getElementById('snapSub').textContent=isA?'EPSIS 한국전력통계 확정치':'제11차 전력수급기본계획 전망치';
+  const {data,unit}=getChartData();
+  const srcList=view==='cap'?CAP_SRCS:GEN_SRCS.filter(s=>active.has(s.id));
+  const vals=srcList.map(s=>+(data[s.id]?.[yi]||0).toFixed(1));
+  const tot=vals.reduce((a,b)=>a+b,0);
+  if(charts.pie)charts.pie.destroy();
+  charts.pie=new Chart(document.getElementById('pieC').getContext('2d'),{
+    type:'doughnut',
+    data:{labels:srcList.map(s=>s.lbl),datasets:[{data:vals,backgroundColor:srcList.map(s=>s.clr),borderColor:'#111827',borderWidth:3}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+      plugins:{legend:{display:false},tooltip:{...TTP,callbacks:{label:c=>{const p=(c.raw/tot*100).toFixed(1);return ` ${c.label}: ${(+c.raw).toFixed(1)} ${unit} (${p}%)`;}}}}}
+  });
+  document.getElementById('pieVal').textContent=tot.toFixed(1);
+  document.getElementById('pieLbl').textContent='합계 '+unit;
+  const sorted=[...srcList.map((s,i)=>({...s,v:vals[i]}))].sort((a,b)=>b.v-a.v);
+  const mx=sorted[0]?.v||1;
+  document.getElementById('barList').innerHTML=sorted.map(d=>`
+    <div>
+      <div class="bar-row-lbl"><span class="bar-name" style="color:${d.clr}">${d.lbl}</span><span class="bar-val">${d.v.toFixed(1)} ${unit} · ${(d.v/tot*100).toFixed(1)}%</span></div>
+      <div class="bar-bg"><div class="bar-fg" style="width:${(d.v/mx*100).toFixed(1)}%;background:${d.clr}"></div></div>
+    </div>`).join('');
+}
+
+function drawTrend(){
+  const {data,unit}=getChartData();
+  const si=planData.years.indexOf(planData.actual_until);
+  const srcList=view==='cap'?CAP_SRCS:GEN_SRCS.filter(s=>active.has(s.id));
+  if(charts.trend)charts.trend.destroy();
+  charts.trend=new Chart(document.getElementById('trendC').getContext('2d'),{
+    type:'line',
+    data:{labels:planData.years,datasets:srcList.map(s=>[
+      {label:s.lbl+'(실적)',data:planData.years.map((_,i)=>i<=si?data[s.id]?.[i]??null:null),borderColor:s.clr,backgroundColor:s.clr+'20',borderWidth:2.5,pointRadius:0,pointHoverRadius:4,tension:0.3,fill:false,spanGaps:false},
+      {label:s.lbl+'(전망)',data:planData.years.map((_,i)=>i>=si?data[s.id]?.[i]??null:null),borderColor:s.clr,borderDash:[5,4],borderWidth:2,backgroundColor:'transparent',pointRadius:0,pointHoverRadius:4,tension:0.3,fill:false,spanGaps:false},
+    ]).flat()},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{...TTP,callbacks:{title:c=>c[0].label+'년',label:c=>c.raw===null?null:` ${c.dataset.label}: ${(+c.raw).toFixed(1)} ${unit}`},filter:c=>c.raw!==null}},
+      scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#64748B',font:{family:'DM Mono',size:10}}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#64748B',font:{family:'DM Mono',size:10}},title:{display:true,text:unit,color:'#64748B',font:{size:9}}}}}
+  });
+  document.getElementById('trendSub').innerHTML=`단위: ${unit} &nbsp;|&nbsp; 실적 <span class="gn">━</span> (2018~${planData.actual_until}) &nbsp;·&nbsp; 전망 <span class="bl">╌</span> (~2038)`;
+  document.getElementById('leg').innerHTML=srcList.map(s=>`<div class="leg-item"><div class="leg-dot" style="background:${s.clr}"></div>${s.lbl}</div>`).join('');
+}
+
+function drawStack(){
+  const act=GEN_SRCS.filter(s=>active.has(s.id));
+  if(charts.stack)charts.stack.destroy();
+  charts.stack=new Chart(document.getElementById('stackC').getContext('2d'),{
+    type:'bar',
+    data:{labels:planData.years,datasets:act.map(s=>({
+      label:s.lbl,
+      data:planData.years.map((_,i)=>{const t=GEN_SRCS.reduce((a,ss)=>a+(getGenArr(ss.id)[i]||0),0);return t>0?+((getGenArr(s.id)[i]||0)/t*100).toFixed(1):0;}),
+      backgroundColor:s.clr+'CC',borderColor:'transparent',borderWidth:0,
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TTP,callbacks:{title:c=>c[0].label+'년',label:c=>` ${c.dataset.label}: ${c.raw}%`}}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#64748B',font:{family:'DM Mono',size:8},maxTicksLimit:7}},y:{stacked:true,max:100,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#64748B',font:{family:'DM Mono',size:8},callback:v=>v+'%'}}}}
+  });
+}
+
+function drawCap(){
+  const si=planData.years.indexOf(planData.actual_until);
+  if(charts.cap)charts.cap.destroy();
+  charts.cap=new Chart(document.getElementById('capC').getContext('2d'),{
+    type:'bar',
+    data:{labels:planData.years,datasets:CAP_SRCS.map(s=>({
+      label:s.lbl,data:planData.years.map((_,i)=>+(getCapArr(s.id)[i]||0).toFixed(1)),
+      backgroundColor:planData.years.map((_,i)=>i<=si?s.clr+'CC':s.clr+'55'),borderColor:'transparent',borderWidth:0,stack:'cap',
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{...TTP,callbacks:{title:c=>c[0].label+'년',label:c=>` ${c.dataset.label}: ${(+c.raw).toFixed(1)} GW`,afterBody:c=>{const t=c.reduce((a,b)=>a+(+b.raw),0);return['──────',` 합계: ${t.toFixed(1)} GW`];}}}},
+      scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#64748B',font:{family:'DM Mono',size:8},maxTicksLimit:7}},y:{stacked:true,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#64748B',font:{family:'DM Mono',size:8},callback:v=>v+' GW'}}}}
+  });
+}
+
+function drawRenew(){
+  const si=planData.years.indexOf(planData.actual_until);
+  const rv=planData.years.map((_,i)=>+((getGenArr('renew')[i]||0)+(getGenArr('shin')[i]||0)).toFixed(1));
+  const rp=planData.years.map((_,i)=>{const t=GEN_SRCS.reduce((a,s)=>a+(getGenArr(s.id)[i]||0),0);return t>0?+(rv[i]/t*100).toFixed(1):0;});
+  if(charts.renew)charts.renew.destroy();
+  charts.renew=new Chart(document.getElementById('renewC').getContext('2d'),{
+    type:'bar',
+    data:{labels:planData.years,datasets:[
+      {type:'bar',label:'재생e+신e',data:rv,backgroundColor:planData.years.map((_,i)=>i<=si?'#10B98177':'#A78BFA55'),yAxisID:'y'},
+      {type:'line',label:'비중',data:rp,borderColor:'#F59E0B',backgroundColor:'transparent',borderWidth:2,pointRadius:0,tension:0.3,yAxisID:'y2'},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TTP,callbacks:{title:c=>c[0].label+'년',label:c=>` ${c.dataset.label}: ${(+c.raw).toFixed(1)}`}}},
+      scales:{x:{grid:{display:false},ticks:{color:'#64748B',font:{family:'DM Mono',size:8},maxTicksLimit:7}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#10B981',font:{family:'DM Mono',size:8},callback:v=>v+' TWh'},position:'left'},y2:{grid:{display:false},ticks:{color:'#F59E0B',font:{family:'DM Mono',size:8},callback:v=>v+'%'},position:'right'}}}
+  });
+}
+
+function redrawMix(){drawKPI();drawSnap();drawTrend();drawStack();drawCap();drawRenew();}
+
+// ── 지역별 탭 ─────────────────────────────────────────
+const RC={수도권:'#38BDF8',충남:'#F472B6',경북:'#FB923C',경남:'#FBBF24',전남:'#34D399',부산:'#EF4444',울산:'#A78BFA',강원:'#06B6D4',전북:'#10B981',충북:'#94A3B8',대구:'#F59E0B',제주:'#4ADE80',광주:'#3B82F6',대전:'#6B7280'};
+function mergeMetro(raw){const out={};for(const[k,v]of Object.entries(raw))if(!['서울','인천','경기'].includes(k))out[k]=v;out['수도권']=(raw['서울']||0)+(raw['인천']||0)+(raw['경기']||0);return out;}
+
+let rInited=false;
+function initRegion(){
+  if(rInited)return; rInited=true;
+  const yrs=Object.keys(regionalData.generation).map(Number).sort((a,b)=>b-a);
+  selRYr=yrs[0];
+  const w=document.getElementById('rYrBtns');
+  yrs.forEach(y=>{
+    const b=document.createElement('button');
+    b.className='yr-btn'+(y===selRYr?' on':'');
+    b.textContent=y+'년';
+    b.onclick=()=>{selRYr=y;document.querySelectorAll('.yr-btn').forEach(x=>x.classList.remove('on'));b.classList.add('on');drawRegion();};
+    w.appendChild(b);
+  });
+  drawRegion();
+}
+function setRMode(m,el){rMode=m;document.querySelectorAll('#pg-region .tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');drawRegion();}
+function drawRegion(){
+  const genRaw=regionalData.generation[selRYr]||{};
+  const demRaw=regionalData.demand[selRYr]||{};
+  const gen=mergeMetro(genRaw), dem=mergeMetro(demRaw);
+  const sorted=Object.keys(gen).sort((a,b)=>gen[b]-gen[a]);
+  const totG=Object.values(gen).reduce((a,b)=>a+b,0),totD=Object.values(dem).reduce((a,b)=>a+b,0);
+  document.getElementById('rMainTitle').textContent=`${selRYr}년 지역별 발전량 vs 수요`;
+  document.getElementById('rPieTitle').textContent=rMode==='gen'?'발전량 비중':'수요 비중';
+  document.getElementById('rKpis').innerHTML=[
+    {lbl:'전국 발전량',val:totG.toFixed(1)+' TWh',sub:selRYr+'년',clr:'#38BDF8'},
+    {lbl:'전국 수요',val:totD.toFixed(1)+' TWh',sub:'판매전력량',clr:'#10B981'},
+    {lbl:'수도권 발전',val:(gen['수도권']||0).toFixed(1)+' TWh',sub:'서울+인천+경기',clr:'#38BDF8'},
+    {lbl:'수도권 수요',val:(dem['수도권']||0).toFixed(1)+' TWh',sub:`자립도 ${(gen['수도권']/dem['수도권']*100).toFixed(0)}%`,clr:'#10B981'},
+  ].map(it=>`<div class="kpi" style="border-top:2px solid ${it.clr}"><div class="kpi-lbl">${it.lbl}</div><div class="kpi-val" style="color:${it.clr}">${it.val}</div><div class="kpi-sub">${it.sub}</div></div>`).join('');
+  let ds=[];
+  if(rMode==='both'||rMode==='gen')ds.push({label:'발전량(TWh)',data:sorted.map(r=>+(gen[r]||0).toFixed(1)),backgroundColor:'#38BDF877',borderColor:'#38BDF8',borderWidth:1.5,borderRadius:3});
+  if(rMode==='both'||rMode==='dem')ds.push({label:'수요(TWh)',data:sorted.map(r=>+(dem[r]||0).toFixed(1)),backgroundColor:'#10B98177',borderColor:'#10B981',borderWidth:1.5,borderRadius:3});
+  if(charts.rMain)charts.rMain.destroy();
+  charts.rMain=new Chart(document.getElementById('rMainC').getContext('2d'),{type:'bar',data:{labels:sorted,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,labels:{color:'#94A3B8',font:{family:'Noto Sans KR',size:10},boxWidth:12}},tooltip:{...TTP,callbacks:{title:c=>c[0].label,label:c=>` ${c.dataset.label}: ${(+c.raw).toFixed(1)} TWh`}}},scales:{x:{grid:{display:false},ticks:{color:'#F1F5F9',font:{family:'Noto Sans KR',size:10}}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#64748B',font:{family:'DM Mono',size:9},callback:v=>v+' TWh'}}}}});
+  const pcts=sorted.map(r=>{const d=dem[r]||0;return d>0?+((gen[r]||0)/d*100).toFixed(1):0;});
+  if(charts.rGap)charts.rGap.destroy();
+  charts.rGap=new Chart(document.getElementById('rGapC').getContext('2d'),{type:'bar',data:{labels:sorted,datasets:[{label:'자립도',data:pcts,backgroundColor:pcts.map(v=>v>=100?'#10B98199':'#EF444499'),borderColor:pcts.map(v=>v>=100?'#10B981':'#EF4444'),borderWidth:1.5,borderRadius:3}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TTP,callbacks:{label:c=>`  ${(+c.raw).toFixed(1)}% ${+c.raw>=100?'(공급초과)':'(부족)'}`}}},scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#64748B',font:{family:'DM Mono',size:8},callback:v=>v+'%'},afterDataLimits(s){s.max=Math.max(s.max,120);}},y:{grid:{display:false},ticks:{color:'#F1F5F9',font:{family:'Noto Sans KR',size:9}}}}}});
+  const useD=rMode==='gen'?gen:dem,useT=Object.values(useD).reduce((a,b)=>a+b,0);
+  if(charts.rPie)charts.rPie.destroy();
+  charts.rPie=new Chart(document.getElementById('rPieC').getContext('2d'),{type:'doughnut',data:{labels:sorted,datasets:[{data:sorted.map(r=>+(useD[r]||0).toFixed(1)),backgroundColor:sorted.map(r=>RC[r]||'#64748B'),borderColor:'#111827',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'50%',plugins:{legend:{display:true,position:'right',labels:{color:'#94A3B8',font:{family:'Noto Sans KR',size:9},boxWidth:9,padding:5}},tooltip:{...TTP,callbacks:{label:c=>{const p=(c.raw/useT*100).toFixed(1);return ` ${c.label}: ${(+c.raw).toFixed(1)} TWh (${p}%)`;}}}}}});
+}
+
+// ── 댐 탭 ─────────────────────────────────────────────
+const DAM_META={
+  '소양강':{basin:'han',cap:2900,industrial:false,note:'수도권 최대 용수원'},
+  '충주':{basin:'han',cap:2750,industrial:true,note:'수도권·충청 공업용수'},
+  '횡성':{basin:'han',cap:87,industrial:true,note:'강원 공업용수'},
+  '안동':{basin:'nak',cap:1248,industrial:true,note:'경북 공업단지 수원'},
+  '합천':{basin:'nak',cap:790,industrial:false,note:'경남 농업·생활용수'},
+  '남강':{basin:'nak',cap:309,industrial:true,note:'창원·진주 공업용수'},
+  '밀양':{basin:'nak',cap:74,industrial:true,note:'밀양·양산'},
+  '대청':{basin:'geum',cap:1490,industrial:true,note:'대전·충청 산단 용수'},
+  '보령':{basin:'geum',cap:116,industrial:true,note:'⚠️ 반복 가뭄 취약'},
+  '용담':{basin:'geum',cap:815,industrial:true,note:'군산·익산 공업'},
+  '주암':{basin:'sum',cap:457,industrial:true,note:'광양·여수 산단'},
+  '섬진강':{basin:'sum',cap:467,industrial:false,note:'남해안 농업용수'},
+};
+
+// 과거 저수율 (K-water fetch 실패시 fallback)
+const DAM_HIST={
+  '소양강':{2018:52,2019:48,2020:61,2021:67,2022:55,2023:63,2024:71},
+  '충주':  {2018:58,2019:51,2020:66,2021:72,2022:59,2023:68,2024:74},
+  '안동':  {2018:45,2019:38,2020:52,2021:58,2022:42,2023:60,2024:67},
+  '대청':  {2018:55,2019:48,2020:62,2021:68,2022:50,2023:65,2024:69},
+  '보령':  {2018:44,2019:35,2020:50,2021:55,2022:28,2023:47,2024:38},
+  '주암':  {2018:58,2019:50,2020:63,2021:69,2022:40,2023:52,2024:71},
+};
+
+let wInited=false;
+function initWater(){
+  if(wInited)return; wInited=true;
+  renderDamCards(); drawAllDam(); drawDamDetail('소양강');
+  // 실시간 저수율 표시
+  const notice=document.getElementById('damNotice');
+  if(damsData){
+    const liveRates=Object.entries(damsData).filter(([,v])=>v.rate!==null).length;
+    if(liveRates>0){
+      notice.textContent=`💧 실시간 저수율 ${liveRates}개 댐 로드 완료 (${damsData[Object.keys(damsData)[0]]?.date||''}기준)`;
+    } else {
+      notice.textContent='💧 실시간 API 응답 없음 — 최근 수집 데이터 표시 중';
+    }
+  }
+}
+function setBasin(b,el){selBasin=b;document.querySelectorAll('#pg-water .tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');renderDamCards();}
+function getLiveRate(name){return damsData?.[name]?.rate||null;}
+function getBestRate(name){return getLiveRate(name)||DAM_HIST[name]?.[2024]||null;}
+
+function renderDamCards(){
+  const filtered=selBasin==='all'?Object.keys(DAM_META):Object.keys(DAM_META).filter(k=>DAM_META[k].basin===selBasin);
+  document.getElementById('damCards').innerHTML=filtered.map(name=>{
+    const r=getBestRate(name);
+    const rc=r>=60?'#10B981':r>=40?'#F59E0B':'#EF4444';
+    const bc=r>=60?'db-ok':r>=40?'db-w':'db-d';
+    const bt=r>=60?'안정':r>=40?'주의':'위험';
+    const isSel=selDam===name;
+    const live=getLiveRate(name);
+    return `<div class="dam-card${isSel?' sel':''}" onclick="selectDam('${name}')">
+      <div class="dam-name">${name}댐 ${live?'<span style="font-size:8px;color:#10B981">● 실시간</span>':''}</div>
+      <div class="dam-rate" style="color:${rc}">${r!==null?r+'%':'—'}</div>
+      <div class="dam-info">${DAM_META[name]?.cap?.toLocaleString()}백만㎥</div>
+      <div style="margin-top:3px;display:flex;gap:3px;flex-wrap:wrap;">
+        <span class="dbadge ${bc}">${bt}</span>
+        ${DAM_META[name]?.industrial?'<span class="dbadge db-w">🏭공업</span>':''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function selectDam(name){selDam=name;renderDamCards();drawDamDetail(name);}
+function drawDamDetail(name){
+  document.getElementById('damRateTitle').textContent=`${name}댐 — 연도별 저수율`;
+  const hist=DAM_HIST[name]||{};
+  const live=getLiveRate(name);
+  const yrs=Object.keys(hist).map(Number).sort((a,b)=>a-b);
+  const vals=yrs.map(y=>hist[y]);
+  // 실시간 데이터가 있으면 올해 값 업데이트
+  const thisYear=new Date().getFullYear();
+  if(live&&!hist[thisYear]){yrs.push(thisYear);vals.push(live);}
+  const colors=vals.map(r=>r>=60?'#10B98199':r>=40?'#F59E0B99':'#EF444499');
+  const borders=vals.map(r=>r>=60?'#10B981':r>=40?'#F59E0B':'#EF4444');
+  if(charts.damRate)charts.damRate.destroy();
+  charts.damRate=new Chart(document.getElementById('damRateC').getContext('2d'),{
+    type:'bar',data:{labels:yrs,datasets:[{data:vals,backgroundColor:colors,borderColor:borders,borderWidth:1.5,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TTP,callbacks:{label:c=>`  저수율: ${c.raw}%`}}},
+      scales:{x:{grid:{display:false},ticks:{color:'#64748B',font:{family:'DM Mono',size:9}}},y:{grid:{color:'rgba(255,255,255,.04)'},max:100,ticks:{color:'#64748B',font:{family:'DM Mono',size:9},callback:v=>v+'%'}}}}
+  });
+}
+function drawAllDam(){
+  const major=['소양강','충주','안동','대청','보령','주암'];
+  const cols=['#3B82F6','#10B981','#F59E0B','#A78BFA','#EF4444','#06B6D4'];
+  const yrs=[2018,2019,2020,2021,2022,2023,2024];
+  if(charts.allDam)charts.allDam.destroy();
+  charts.allDam=new Chart(document.getElementById('allDamC').getContext('2d'),{
+    type:'bar',
+    data:{labels:major,datasets:[{
+      label:'저수율(%)',
+      data:major.map(n=>getBestRate(n)||0),
+      backgroundColor:major.map((n,i)=>{const r=getBestRate(n)||0;return r>=60?cols[i]+'CC':r>=40?cols[i]+'88':cols[i]+'55';}),
+      borderColor:major.map((n,i)=>cols[i]),borderWidth:1.5,borderRadius:4,
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{...TTP,callbacks:{label:c=>`  ${c.label}댐: ${c.raw}%`}}},
+      scales:{x:{grid:{display:false},ticks:{color:'#F1F5F9',font:{family:'Noto Sans KR',size:10}}},y:{grid:{color:'rgba(255,255,255,.04)'},max:100,ticks:{color:'#64748B',font:{family:'DM Mono',size:9},callback:v=>v+'%'}}}}
+  });
+}
+
+// ════════════════════════════════════════════════════
+// Fallback 데이터 (JSON 로드 실패시)
+// ════════════════════════════════════════════════════
+const FALLBACK_PLAN={
+  source:"제11차 전력수급기본계획",unit:"TWh",actual_until:2023,
+  years:[2018,2019,2020,2021,2022,2023,2024,2025,2026,2027,2028,2029,2030,2031,2032,2033,2034,2035,2036,2037,2038],
+  generation:{
+    nuclear:[127.1,138.8,152.6,158.0,176.1,180.5,182.8,185.1,188.1,191.1,195.1,199.2,204.2,210.9,217.7,224.4,231.2,236.0,239.1,242.2,248.3],
+    coal:   [239.2,227.4,196.4,200.2,198.4,184.9,171.6,158.3,152.0,145.8,139.5,125.0,110.5,104.3,98.2,93.6,89.0,88.9,83.2,77.5,70.9],
+    lng:    [152.6,144.4,145.8,168.5,171.9,157.7,157.9,158.1,159.3,160.4,161.5,161.3,161.0,152.3,143.6,131.9,116.1,101.1,90.0,83.1,74.3],
+    renew:  [36.9, 44.5, 51.8, 63.1, 74.7, 49.4, 62.5, 75.6, 89.9,104.2,113.4,117.2,120.9,133.1,145.3,157.5,168.7,179.9,185.2,192.5,205.7],
+    shin:   [5.8,  6.2,  6.5,  7.1,  7.0,  7.2,  11.6, 15.9, 19.0, 22.1, 25.5, 29.8, 34.2, 38.8, 43.4, 47.9, 52.5, 57.1, 60.9, 64.7, 70.3],
+    other:  [8.5,  8.2,  8.0,  8.1,  8.2,  8.3,  9.4,  10.4, 10.8, 11.2, 11.5, 11.7, 11.8, 15.6, 19.3, 22.1, 25.3, 28.5, 30.1, 31.7, 34.9],
+  },
+  capacity_gw:{
+    nuclear:[22.5,23.1,23.3,24.7,25.4,24.7,25.1,26.1,26.8,27.4,28.0,28.5,28.9,29.9,30.9,31.7,32.1,32.4,32.9,34.0,35.2],
+    coal:   [37.0,36.8,36.9,36.3,36.8,39.2,40.3,40.8,38.6,36.5,34.3,33.0,31.7,30.6,29.5,28.8,28.4,28.1,26.0,24.0,22.2],
+    lng:    [41.3,41.7,41.5,43.6,43.0,43.2,44.7,47.3,49.7,52.1,54.5,56.7,58.8,60.5,62.2,63.5,64.1,64.7,66.0,67.5,69.2],
+    renew:  [14.5,19.4,24.0,29.3,37.6,30.0,33.8,39.0,49.2,59.4,65.7,71.8,78.0,84.6,91.2,97.8,102.8,107.8,112.5,117.0,121.9],
+    pumped: [4.7, 4.7, 4.7, 4.7, 4.7, 4.7, 4.7, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.8, 6.4, 7.0, 7.5, 7.9, 8.5, 9.5, 10.4],
+    shin:   [1.0, 1.1, 1.2, 1.3, 1.3, 1.4, 1.5, 1.8, 2.1, 2.3, 2.5, 2.7, 2.9, 3.1, 3.2, 3.4, 3.5, 3.6, 3.7, 3.9, 4.0],
+    other:  [1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.2, 1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7],
+  }
+};
+const FALLBACK_DAMS={};
+const FALLBACK_REGIONAL={
+  generation:{
+    2024:{서울:5.8,인천:49.7,경기:88.9,강원:26.1,경남:45.7,경북:99.8,광주:0.9,대구:3.0,대전:0.3,부산:37.1,울산:33.0,전남:71.7,전북:15.9,제주:4.7,충남:103.6,충북:4.4},
+    2023:{서울:6.0,인천:51.1,경기:87.2,강원:27.8,경남:44.3,경북:103.5,광주:0.8,대구:3.1,대전:0.3,부산:38.2,울산:33.2,전남:72.4,전북:14.4,제주:4.5,충남:116.8,충북:4.3},
+  },
+  demand:{
+    2024:{서울:46.2,인천:29.1,경기:121.4,강원:16.8,경남:37.2,경북:36.8,광주:13.9,대구:21.5,대전:15.6,부산:29.4,울산:26.2,전남:31.8,전북:21.3,제주:6.0,충남:51.2,충북:24.1},
+    2023:{서울:46.5,인천:28.8,경기:119.2,강원:16.5,경남:36.8,경북:36.2,광주:13.6,대구:21.2,대전:15.3,부산:29.1,울산:25.8,전남:31.2,전북:20.8,제주:5.9,충남:49.8,충북:23.5},
+  }
+};
+
+// 시작
+init();
+</script>
+</body>
+</html>
