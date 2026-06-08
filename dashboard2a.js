@@ -11,125 +11,74 @@ function initWater(){
 
 function renderKoreaMap(){
   const mapEl=document.getElementById('koreaMap');
-  // 상세한 한국 SVG 지도 (권역별 색상 구분)
+  const DAM_COORDS={
+    '소양강':{cx:210,cy:72},'충주':{cx:175,cy:108},'횡성':{cx:200,cy:88},
+    '안동':{cx:232,cy:140},'합천':{cx:196,cy:198},'남강':{cx:182,cy:218},
+    '밀양':{cx:228,cy:206},'대청':{cx:148,cy:150},'보령':{cx:108,cy:160},
+    '용담':{cx:150,cy:172},'주암':{cx:148,cy:240},'섬진강':{cx:168,cy:212},
+  };
   mapEl.innerHTML=`
-  <svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
-    <defs>
-      <filter id="glow2"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      <filter id="shadow"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.4"/></filter>
-    </defs>
-
-    <!-- 배경 -->
-    <rect width="200" height="260" fill="#0A0F1E"/>
-
-    <!-- 한국 본토 상세 윤곽 (한강/낙동강/금강/섬진강 권역 구분) -->
-    <!-- 경기·강원 (한강 수계) -->
-    <path d="M75,14 L82,10 L92,11 L100,14 L108,13 L115,16 L122,20 L126,26 L128,32 L126,40 L122,46 L118,52 L120,58 L118,64 L113,68 L106,72 L100,75 L94,72 L88,68 L82,65 L76,62 L70,58 L68,52 L72,46 L74,40 L72,34 L73,28 Z" fill="#1E3A5F" stroke="#38BDF8" stroke-width="0.6" opacity="0.9"/>
-    <!-- 충청 (금강 수계) -->
-    <path d="M60,72 L70,68 L82,65 L88,68 L94,72 L100,75 L106,72 L113,68 L116,74 L114,82 L110,88 L106,92 L100,95 L94,92 L88,88 L80,86 L72,84 L64,80 L58,76 Z" fill="#1A2E40" stroke="#38BDF8" stroke-width="0.5" opacity="0.85"/>
-    <!-- 전라 (섬진강 수계) -->
-    <path d="M48,88 L58,84 L64,80 L72,84 L80,86 L88,88 L94,92 L100,95 L100,102 L96,108 L90,114 L84,118 L78,122 L70,126 L62,128 L54,124 L48,118 L44,112 L44,104 L46,96 Z" fill="#152835" stroke="#38BDF8" stroke-width="0.5" opacity="0.85"/>
-    <!-- 경상 (낙동강 수계) -->
-    <path d="M100,75 L106,72 L113,68 L118,64 L122,68 L126,74 L128,82 L126,90 L122,96 L118,102 L116,108 L114,114 L110,120 L106,126 L100,130 L96,126 L90,122 L90,114 L96,108 L100,102 L100,95 Z" fill="#1E2D40" stroke="#38BDF8" stroke-width="0.5" opacity="0.85"/>
-    <!-- 남부해안 -->
-    <path d="M62,128 L70,126 L78,128 L84,132 L90,134 L96,136 L100,138 L104,136 L110,132 L114,128 L116,122 L114,128 L110,134 L104,140 L96,144 L88,146 L80,144 L72,140 L64,136 L58,132 Z" fill="#152232" stroke="#38BDF8" stroke-width="0.5" opacity="0.8"/>
-    <!-- 동해안 라인 -->
-    <path d="M122,20 L128,26 L132,34 L134,42 L132,50 L130,58 L128,66 L126,74 L128,82" fill="none" stroke="#1E3A5F" stroke-width="0.4"/>
-
-    <!-- 해안선 강조 -->
-    <path d="M75,14 L82,10 L92,11 L100,14 L108,13 L115,16 L122,20 L126,26 L128,32 L126,40 L122,46 L118,52 L120,58 L118,64 L122,68 L126,74 L128,82 L126,90 L122,96 L118,102 L116,108 L114,114 L110,120 L114,128 L116,122 L114,128 L110,132 L104,136 L100,138 L96,136 L90,134 L84,132 L78,128 L72,140 L64,136 L58,132 L62,128 L54,124 L48,118 L44,112 L44,104 L46,96 L48,88 L58,84 L58,76 L60,72 L68,52 L72,46 L74,40 L72,34 L73,28 L75,14Z" fill="none" stroke="#38BDF8" stroke-width="0.8" opacity="0.6"/>
-
-    <!-- 주요 강 -->
-    <path d="M100,75 L90,68 L80,60 L72,54 L66,46" fill="none" stroke="#38BDF855" stroke-width="1.2"/>
-    <path d="M100,95 L108,102 L114,108 L118,116 L116,124" fill="none" stroke="#38BDF844" stroke-width="1.0"/>
-    <path d="M80,86 L70,92 L60,96 L54,104" fill="none" stroke="#38BDF844" stroke-width="0.9"/>
-
-    <!-- 권역 레이블 -->
-    <text x="96" y="44" text-anchor="middle" font-size="7" fill="#38BDF888" font-family="sans-serif">한강</text>
-    <text x="80" y="84" text-anchor="middle" font-size="6.5" fill="#38BDF877" font-family="sans-serif">금강</text>
-    <text x="68" y="108" text-anchor="middle" font-size="6.5" fill="#38BDF877" font-family="sans-serif">섬진강</text>
-    <text x="114" y="95" text-anchor="middle" font-size="6.5" fill="#38BDF877" font-family="sans-serif">낙동강</text>
-
-    <!-- 제주도 -->
-    <ellipse cx="84" cy="168" rx="16" ry="7" fill="#152232" stroke="#38BDF8" stroke-width="0.6" opacity="0.8"/>
-    <text x="84" y="170" text-anchor="middle" font-size="5.5" fill="#38BDF877" font-family="sans-serif">제주</text>
-
-    <!-- 댐 마커 -->
+  <svg viewBox="0 0 300 380" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+    <defs><filter id="glow2"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    <rect width="300" height="380" fill="#0A0F1E"/>
+    <path d="M100,20 L120,14 L145,15 L165,18 L185,16 L205,20 L222,28 L232,38 L238,52 L235,68 L228,82 L220,94 L215,108 L210,120 L200,128 L188,132 L175,130 L162,126 L150,128 L138,124 L126,118 L115,110 L105,100 L98,88 L95,74 L98,58 L100,42 Z" fill="#1A3050" stroke="#38BDF8" stroke-width="1" opacity="0.9"/>
+    <path d="M95,100 L105,100 L115,110 L126,118 L138,124 L150,128 L162,126 L175,130 L188,132 L200,128 L210,120 L215,136 L212,152 L205,164 L195,172 L182,176 L168,174 L155,170 L140,168 L125,164 L110,158 L98,150 L90,138 L90,122 Z" fill="#152840" stroke="#38BDF8" stroke-width="0.8" opacity="0.88"/>
+    <path d="M90,150 L98,150 L110,158 L125,164 L140,168 L155,170 L168,174 L168,190 L165,208 L158,224 L148,236 L135,246 L120,252 L105,254 L90,250 L78,242 L70,230 L68,216 L70,202 L75,188 L80,174 L84,162 Z" fill="#122535" stroke="#38BDF8" stroke-width="0.8" opacity="0.88"/>
+    <path d="M175,130 L188,132 L200,128 L215,136 L225,148 L232,162 L235,178 L232,194 L225,208 L215,220 L208,232 L200,244 L190,252 L178,256 L165,254 L155,248 L148,236 L158,224 L165,208 L168,190 L168,174 L182,176 L195,172 L205,164 L212,152 L215,136 Z" fill="#162038" stroke="#38BDF8" stroke-width="0.8" opacity="0.88"/>
+    <path d="M105,254 L120,252 L135,246 L148,236 L155,248 L165,254 L178,256 L190,252 L200,244 L205,258 L195,268 L180,274 L162,276 L145,274 L128,268 L114,262 Z" fill="#101E2E" stroke="#38BDF8" stroke-width="0.7" opacity="0.8"/>
+    <path d="M100,20 L120,14 L145,15 L165,18 L185,16 L205,20 L222,28 L232,38 L238,52 L235,68 L228,82 L220,94 L225,108 L232,122 L238,138 L238,155 L235,172 L232,190 L228,208 L220,224 L210,238 L205,258 L195,268 L180,274 L162,276 L145,274 L128,268 L114,262 L105,254 L90,250 L78,242 L70,230 L68,216 L70,202 L75,188 L80,174 L84,162 L90,150 L90,138 L90,122 L95,100 L98,88 L95,74 L98,58 L100,42 Z" fill="none" stroke="#38BDF8" stroke-width="1.2" opacity="0.5"/>
+    <path d="M175,130 L165,118 L150,104 L132,88 L115,72 L100,56" fill="none" stroke="#38BDF855" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M195,172 L205,190 L215,208 L220,226 L218,244" fill="none" stroke="#38BDF844" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M155,170 L138,182 L120,192 L105,200 L92,214" fill="none" stroke="#38BDF844" stroke-width="1.4" stroke-linecap="round"/>
+    <text x="170" y="85" text-anchor="middle" font-size="11" fill="#38BDF866" font-family="sans-serif" font-weight="bold">한강</text>
+    <text x="148" y="148" text-anchor="middle" font-size="10" fill="#38BDF855" font-family="sans-serif" font-weight="bold">금강</text>
+    <text x="108" y="210" text-anchor="middle" font-size="10" fill="#38BDF855" font-family="sans-serif" font-weight="bold">섬진강</text>
+    <text x="210" y="185" text-anchor="middle" font-size="10" fill="#38BDF855" font-family="sans-serif" font-weight="bold">낙동강</text>
+    <ellipse cx="148" cy="316" rx="32" ry="14" fill="#122535" stroke="#38BDF8" stroke-width="0.8" opacity="0.85"/>
+    <text x="148" y="318" text-anchor="middle" font-size="9" fill="#38BDF877" font-family="sans-serif">제주도</text>
     <g id="damMarkers2"></g>
-
-    <!-- 범례 -->
-    <rect x="4" y="180" width="80" height="72" fill="#111827CC" rx="6" stroke="#21262D" stroke-width="0.5"/>
-    <text x="10" y="192" font-size="6.5" fill="#64748B" font-family="sans-serif" font-weight="bold">저수율 범례</text>
-    <circle cx="14" cy="202" r="5" fill="#10B981" opacity="0.85"/>
-    <text x="23" y="205" font-size="6" fill="#94A3B8" font-family="sans-serif">60% 이상 (안정)</text>
-    <circle cx="14" cy="216" r="5" fill="#F59E0B" opacity="0.85"/>
-    <text x="23" y="219" font-size="6" fill="#94A3B8" font-family="sans-serif">40~60% (주의)</text>
-    <circle cx="14" cy="230" r="5" fill="#EF4444" opacity="0.85"/>
-    <text x="23" y="233" font-size="6" fill="#94A3B8" font-family="sans-serif">40% 미만 (위험)</text>
-    <text x="10" y="246" font-size="5.5" fill="#38BDF8" font-family="sans-serif">🏭= 공업용수 공급댐</text>
+    <rect x="6" y="288" width="115" height="82" fill="#111827DD" rx="8" stroke="#21262D" stroke-width="0.8"/>
+    <text x="14" y="303" font-size="9.5" fill="#94A3B8" font-family="sans-serif" font-weight="bold">저수율 범례</text>
+    <circle cx="20" cy="316" r="7" fill="#10B981" opacity="0.85"/>
+    <text x="32" y="320" font-size="8.5" fill="#94A3B8" font-family="sans-serif">60% 이상 (안정)</text>
+    <circle cx="20" cy="334" r="7" fill="#F59E0B" opacity="0.85"/>
+    <text x="32" y="338" font-size="8.5" fill="#94A3B8" font-family="sans-serif">40~60% (주의)</text>
+    <circle cx="20" cy="352" r="7" fill="#EF4444" opacity="0.85"/>
+    <text x="32" y="356" font-size="8.5" fill="#94A3B8" font-family="sans-serif">40% 미만 (위험)</text>
+    <text x="14" y="366" font-size="8" fill="#F59E0B" font-family="sans-serif">🏭 공업용수 공급댐</text>
   </svg>`;
-  // 댐 마커 추가
-  const svg=mapEl.querySelector('svg');
   const markersG=mapEl.querySelector('#damMarkers2');
   const filtered=Object.keys(DAM_META).filter(n=>selBasin==='all'||DAM_META[n].basin===selBasin);
   filtered.forEach(name=>{
     const meta=DAM_META[name];
+    const coords=DAM_COORDS[name];
+    if(!coords) return;
     const rate=getBestRate(name);
     const clr=getRateColor(rate||50);
-    // SVG viewBox 200x260 기준
-    const x=meta.svgX*200/100;
-    const y=meta.svgY*260/100;
+    const cx=coords.cx, cy=coords.cy;
     const isSel=selDam===name;
     const g=document.createElementNS('http://www.w3.org/2000/svg','g');
-    g.setAttribute('class','dam-marker');
     g.style.cursor='pointer';
-
-    const outerCircle=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    outerCircle.setAttribute('cx',x); outerCircle.setAttribute('cy',y);
-    outerCircle.setAttribute('r',isSel?12:9);
-    outerCircle.setAttribute('fill',clr); outerCircle.setAttribute('opacity','0.25');
-
-    const innerCircle=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    innerCircle.setAttribute('cx',x); innerCircle.setAttribute('cy',y);
-    innerCircle.setAttribute('r',isSel?8:6);
-    innerCircle.setAttribute('fill',clr); innerCircle.setAttribute('opacity','0.9');
-    innerCircle.setAttribute('filter','url(#glow2)');
-    if(isSel){innerCircle.setAttribute('stroke','#fff');innerCircle.setAttribute('stroke-width','1.5');}
-
-    const rateText=document.createElementNS('http://www.w3.org/2000/svg','text');
-    rateText.setAttribute('x',x); rateText.setAttribute('y',y+2.5);
-    rateText.setAttribute('text-anchor','middle');
-    rateText.setAttribute('font-size','5'); rateText.setAttribute('fill','#fff');
-    rateText.setAttribute('font-weight','bold');
-    rateText.textContent=rate?rate+'%':'?';
-
-    const nameText=document.createElementNS('http://www.w3.org/2000/svg','text');
-    nameText.setAttribute('x',x); nameText.setAttribute('y',y-12);
-    nameText.setAttribute('text-anchor','middle');
-    nameText.setAttribute('font-size','5.5'); nameText.setAttribute('fill','#CBD5E1');
-    nameText.textContent=name;
-
-    // 공업용수 표시
-    if(meta.industrial){
-      const indText=document.createElementNS('http://www.w3.org/2000/svg','text');
-      indText.setAttribute('x',x+10); indText.setAttribute('y',y-5);
-      indText.setAttribute('font-size','6'); indText.setAttribute('fill','#F59E0B');
-      indText.textContent='🏭';
-      g.appendChild(indText);
-    }
-
-    g.appendChild(outerCircle); g.appendChild(innerCircle);
-    g.appendChild(rateText); g.appendChild(nameText);
-
+    const outer=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    outer.setAttribute('cx',cx);outer.setAttribute('cy',cy);outer.setAttribute('r',isSel?16:12);outer.setAttribute('fill',clr);outer.setAttribute('opacity','0.2');
+    const inner=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    inner.setAttribute('cx',cx);inner.setAttribute('cy',cy);inner.setAttribute('r',isSel?11:8);inner.setAttribute('fill',clr);inner.setAttribute('opacity','0.92');inner.setAttribute('filter','url(#glow2)');
+    if(isSel){inner.setAttribute('stroke','#fff');inner.setAttribute('stroke-width','2');}
+    const rt=document.createElementNS('http://www.w3.org/2000/svg','text');
+    rt.setAttribute('x',cx);rt.setAttribute('y',cy+3.5);rt.setAttribute('text-anchor','middle');rt.setAttribute('font-size','7');rt.setAttribute('fill','#fff');rt.setAttribute('font-weight','bold');
+    rt.textContent=rate?rate+'%':'?';
+    const nt=document.createElementNS('http://www.w3.org/2000/svg','text');
+    nt.setAttribute('x',cx);nt.setAttribute('y',cy-15);nt.setAttribute('text-anchor','middle');nt.setAttribute('font-size','7.5');nt.setAttribute('fill','#CBD5E1');nt.setAttribute('font-weight','600');
+    nt.textContent=name;
+    if(meta.industrial){const it=document.createElementNS('http://www.w3.org/2000/svg','text');it.setAttribute('x',cx+13);it.setAttribute('y',cy-7);it.setAttribute('font-size','9');it.setAttribute('fill','#F59E0B');it.textContent='🏭';g.appendChild(it);}
+    g.appendChild(outer);g.appendChild(inner);g.appendChild(rt);g.appendChild(nt);
     g.addEventListener('click',()=>selectDam(name));
-    g.addEventListener('mouseenter',(e)=>{
-      const rect=mapEl.getBoundingClientRect();
+    g.addEventListener('mouseenter',()=>{
       const tt=document.getElementById('damTooltip');
-      tt.innerHTML=`<b style="font-size:13px">${name}댐</b><br>저수율: <b style="color:${clr};font-size:14px">${rate||'?'}%</b><br><span style="font-size:11px;color:#94A3B8">${meta.cap.toLocaleString()}백만㎥</span><br><span style="font-size:10px;color:#64748B">${meta.note}</span>`;
       const svgRect=mapEl.querySelector('svg').getBoundingClientRect();
-      const scaleX=svgRect.width/200, scaleY=svgRect.height/260;
-      tt.style.left=(x*scaleX+20)+'px'; tt.style.top=(y*scaleY-30)+'px';
-      tt.classList.add('show');
+      const sx=svgRect.width/300, sy=svgRect.height/380;
+      tt.innerHTML=`<b style="font-size:13px">${name}댐</b><br>저수율: <b style="color:${clr};font-size:15px">${rate||'?'}%</b><br><span style="font-size:11px;color:#94A3B8">${meta.cap.toLocaleString()}백만㎥</span><br><span style="font-size:10px;color:#64748B">${meta.note}</span>`;
+      tt.style.left=(cx*sx+20)+'px';tt.style.top=Math.max(0,cy*sy-50)+'px';tt.classList.add('show');
     });
     g.addEventListener('mouseleave',()=>{document.getElementById('damTooltip').classList.remove('show');});
     markersG.appendChild(g);
