@@ -1,7 +1,7 @@
 {
   "meta": {
-    "updated_at": "2026-06-10",
-    "updated_ts": 1781063642
+    "updated_at": "2026-06-11",
+    "updated_ts": 1781150828
   },
   "plan": {
     "source": "제11차 전력수급기본계획 (산업통상자원부 공고 제2025-169호, 2025.02.21)",
@@ -270,61 +270,61 @@
     "소양강": {
       "rate": null,
       "level": null,
-      "date": "20260610",
+      "date": "20260611",
       "source": "K-water 수문정보"
     },
     "충주": {
       "rate": null,
       "level": null,
-      "date": "20260610",
+      "date": "20260611",
       "source": "K-water 수문정보"
     },
     "안동": {
       "rate": null,
       "level": null,
-      "date": "20260610",
+      "date": "20260611",
       "source": "K-water 수문정보"
     },
     "대청": {
       "rate": null,
       "level": null,
-      "date": "20260610",
+      "date": "20260611",
       "source": "K-water 수문정보"
     },
     "합천": {
       "rate": null,
       "level": null,
-      "date": "20260610",
+      "date": "20260611",
       "source": "K-water 수문정보"
     },
     "보령": {
       "rate": null,
       "level": null,
-      "date": "20260610",
+      "date": "20260611",
       "source": "K-water 수문정보"
     },
     "주암": {
       "rate": null,
       "level": null,
-      "date": "20260610",
+      "date": "20260611",
       "source": "K-water 수문정보"
     },
     "용담": {
       "rate": null,
       "level": null,
-      "date": "20260610",
+      "date": "20260611",
       "source": "K-water 수문정보"
     },
     "섬진강": {
       "rate": null,
       "level": null,
-      "date": "20260610",
+      "date": "20260611",
       "source": "K-water 수문정보"
     },
     "남강": {
       "rate": null,
       "level": null,
-      "date": "20260610",
+      "date": "20260611",
       "source": "K-water 수문정보"
     }
   },
